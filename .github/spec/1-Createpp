@@ -1,0 +1,116 @@
+Especificação do Projeto: Sistema de Fluxo de Caixa
+
+Visão Geral da SoluçãoA solução consiste em dois ecossistemas/serviços principais isolados para garantir o requisito de resiliência:  Lançamentos Service (CashFlow.API): Responsável por registrar as entradas (créditos) e saídas (débitos).  Consolidação Service (Consolidation.API / Consolidation.Worker): Responsável por processar e fornecer o saldo diário consolidado.  Resiliência: O registro de lançamentos funcionará normalmente mesmo se a consolidação estiver indisponível. Para suportar o pico de 50 req/s, utiliza-se processamento assíncrono via mensageria (ex: RabbitMQ ou PostgreSQL Outbox/Queue). 
+
+Modelo de Domínio e Regras de Negócio
+Entidades Principais
+Lancamento (Agregado):
+Id (Guid)
+Descricao (string)
+Valor (decimal)
+Tipo (Enum: Credito = 1, Debito = 2)
+DataLancamento (DateTimeOffset)
+UsuarioId (Guid)
+
+SaldoConsolidado (Agregado):
+Data (DateOnly)
+TotalCreditos (decimal)
+TotalDebitos (decimal)
+SaldoFinal (decimal)
+UltimaAtualizacao (DateTimeOffset)
+
+Regras de Negócio
+O valor de um lançamento deve ser estritamente maior que zero (Valor > 0).
+Lançamentos de débito não alteram o sinal do valor armazenado (são identificados pelo Enum Tipo), mas abatem no cálculo do saldo consolidado.
+Não é permitido alterar ou excluir lançamentos consolidados para manter a auditabilidade (imutabilidade dos registros).
+
+Linguagem e Framework
+Linguagem: C#
+
+Framework: .NET Core 10
+
+Tipo: WebAPI para exposição de endpoints REST
+
+Arquitetura
+Arquitetura Limpa (Clean Architecture) com separação em camadas:
+
+Domínio: Entidades e regras de negócio
+
+Aplicação: Casos de uso e orquestração
+
+Infraestrutura: Persistência, integração com banco de dados e serviços externos
+
+Interface (API): Controladores REST para interação com clientes
+
+Padrões: DDD (Domain-Driven Design) e REST
+
+Autenticação e Autorização
+Implementação de JWT (JSON Web Token) para autenticação e autorização
+
+Middleware para validação de tokens em cada requisição
+
+src/
+├── Core/
+│   ├── CashFlow.Domain/          # Entidades, Value Objects, Interfaces de Repositório, Regras de Negócio
+│   └── CashFlow.Application/     # Casos de Uso (Services/Handlers), DTOs, Mapeamentos, Validadores
+├── Infrastructure/
+│   ├── CashFlow.Infrastructure/  # EF Core, DbContext, Mapeamento PostgreSQL, Repositórios, JW
+├── Presentation/
+│   └── CashFlow.API/             # Controllers, Middlewares, Configurations, Swagger
+└── Tests/
+    ├── CashFlow.UnitTests/       # Testes Unitários das Regras de Negócio e Casos de Uso (xUnit)
+    └── CashFlow.IntegrationTests/# Testes de Integração
+
+Banco de Dados
+Banco: PostgreSQL
+
+Uso de Dapper para ORM
+
+Migrações automatizadas para versionamento do schema
+
+Infraestrutura
+Docker para empacotamento da aplicação
+
+Kubernetes para orquestração e escalabilidade
+
+Configuração de Helm Charts para deploy
+
+Testes
+Testes unitários com xUnit
+
+Testes de integração para validar fluxo completo
+
+Cobertura mínima de 80% do código
+
+Requisitos Não Funcionais
+Resiliência: Aplicação de gestão de lançamentos deve continuar operante mesmo em falha do sistema de consolidação
+
+Performance: Suporte a 50 requisições/segundo com tolerância de até 5% de perda
+
+Logging e monitoramento com Serilog e integração com Prometheus/Grafana
+
+📖 Documentação
+README.md contendo:
+
+Pré-requisitos (SDK .NET, Docker, Kubernetes, PostgreSQL)
+
+Passos para rodar a aplicação localmente
+
+Estrutura do projeto e explicação das camadas
+
+Exemplos de requisições (via Postman ou curl)
+
+Possíveis melhorias futuras (ex: mensageria com RabbitMQ, CQRS, Event Sourcing)
+
+✅ Fluxo Funcional
+Cadastro de lançamentos financeiros (créditos e débitos)
+
+Consulta de saldo diário consolidado
+
+Persistência no PostgreSQL
+
+Exposição via endpoints REST
+
+Autenticação JWT para segurança
+
+Testes automatizados garantindo qualidade
