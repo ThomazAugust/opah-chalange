@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cashflow
+description: Helm chart inicial para o ecossistema CashFlow
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

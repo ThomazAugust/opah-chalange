@@ -1,0 +1,17 @@
+imagePullPolicy: IfNotPresent
+
+cashflowApi:
+  image: cashflow-api:latest
+  replicas: 1
+  servicePort: 8080
+
+consolidationApi:
+  image: consolidation-api:latest
+  replicas: 1
+  servicePort: 8080
+
+consolidationWorker:
+  image: consolidation-worker:latest
+  replicas: 1
+
+connectionString: "Host=postgres;Port=5432;Database=cashflow;Username=postgres;Password=postgres"

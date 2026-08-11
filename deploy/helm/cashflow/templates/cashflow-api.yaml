@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cashflow-api
+spec:
+  replicas: {{ .Values.cashflowApi.replicas }}
+  selector:
+    matchLabels:
+      app: cashflow-api
+  template:
+    metadata:
+      labels:
+        app: cashflow-api
+    spec:
+      containers:
+        - name: cashflow-api
+          image: {{ .Values.cashflowApi.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              value: {{ .Values.connectionString | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cashflow-api
+spec:
+  selector:
+    app: cashflow-api
+  ports:
+    - port: {{ .Values.cashflowApi.servicePort }}
+      targetPort: 8080

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consolidation-worker
+spec:
+  replicas: {{ .Values.consolidationWorker.replicas }}
+  selector:
+    matchLabels:
+      app: consolidation-worker
+  template:
+    metadata:
+      labels:
+        app: consolidation-worker
+    spec:
+      containers:
+        - name: consolidation-worker
+          image: {{ .Values.consolidationWorker.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              value: {{ .Values.connectionString | quote }}
