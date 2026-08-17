@@ -6,24 +6,23 @@ namespace CashFlow.Infrastructure.Repositories;
 
 public class SaldoConsolidadoRepository(ConnectionFactory connectionFactory) : ISaldoConsolidadoRepository
 {
-    public async Task<SaldoConsolidado?> GetByDateAsync(DateOnly data, CancellationToken cancellationToken = default)
+    public async Task<SaldoConsolidado> GetByDateAsync(DateOnly data, CancellationToken cancellationToken = default)
     {
         const string sql = """
-            SELECT data, total_creditos, total_debitos, saldo_final, ultima_atualizacao
-            FROM saldos_consolidados
-            WHERE data = @Data;
+            SELECT
+                COALESCE(SUM(valor) FILTER (WHERE tipo = 1), 0) AS total_creditos,
+                COALESCE(SUM(valor) FILTER (WHERE tipo = 2), 0) AS total_debitos
+            FROM lancamentos
+            WHERE DATE(data_lancamento) = @Data;
             """;
 
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
 
-        var row = await connection.QueryFirstOrDefaultAsync<RawSaldo>(new CommandDefinition(sql, new { Data = data }, cancellationToken: cancellationToken));
-        if (row is null)
-        {
-            return null;
-        }
+        var queryParameters = new { Data = data.ToDateTime(TimeOnly.MinValue) };
+        var totais = await connection.QuerySingleAsync<RawTotais>(new CommandDefinition(sql, queryParameters, cancellationToken: cancellationToken));
 
-        return new SaldoConsolidado(row.Data, row.TotalCreditos, row.TotalDebitos, row.UltimaAtualizacao);
+        return new SaldoConsolidado(data, totais.TotalCreditos, totais.TotalDebitos, DateTimeOffset.UtcNow);
     }
 
     public async Task UpsertAsync(SaldoConsolidado saldoConsolidado, CancellationToken cancellationToken = default)
@@ -51,5 +50,5 @@ public class SaldoConsolidadoRepository(ConnectionFactory connectionFactory) : I
         }, cancellationToken: cancellationToken));
     }
 
-    private sealed record RawSaldo(DateOnly Data, decimal TotalCreditos, decimal TotalDebitos, decimal SaldoFinal, DateTimeOffset UltimaAtualizacao);
+    private sealed record RawTotais(decimal TotalCreditos, decimal TotalDebitos);
 }

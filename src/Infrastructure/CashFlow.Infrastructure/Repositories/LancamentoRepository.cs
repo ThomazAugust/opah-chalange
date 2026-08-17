@@ -46,7 +46,7 @@ public class LancamentoRepository(ConnectionFactory connectionFactory) : ILancam
             row.Id,
             row.Descricao,
             row.Valor,
-            (TipoLancamento)row.Tipo,
+            (ModalidadeLancamento)row.Tipo,
             row.DataLancamento,
             row.UsuarioId)).ToArray();
     }

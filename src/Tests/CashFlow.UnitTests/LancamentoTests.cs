@@ -12,12 +12,12 @@ public class LancamentoTests
             Guid.NewGuid(),
             "Pagamento de cliente",
             150.50m,
-            TipoLancamento.Credito,
+            ModalidadeLancamento.Credito,
             DateTimeOffset.UtcNow,
             Guid.NewGuid());
 
         Assert.Equal(150.50m, lancamento.Valor);
-        Assert.Equal(TipoLancamento.Credito, lancamento.Tipo);
+        Assert.Equal(ModalidadeLancamento.Credito, lancamento.Tipo);
     }
 
     [Fact]
@@ -27,7 +27,7 @@ public class LancamentoTests
             Guid.NewGuid(),
             "Despesa",
             0m,
-            TipoLancamento.Debito,
+            ModalidadeLancamento.Debito,
             DateTimeOffset.UtcNow,
             Guid.NewGuid());
 

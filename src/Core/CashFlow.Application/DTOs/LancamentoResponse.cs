@@ -6,6 +6,6 @@ public sealed record LancamentoResponse(
     Guid Id,
     string Descricao,
     decimal Valor,
-    TipoLancamento Tipo,
+    ModalidadeLancamento Tipo,
     DateTimeOffset DataLancamento,
     Guid UsuarioId);

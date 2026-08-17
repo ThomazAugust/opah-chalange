@@ -1,12 +1,13 @@
 using CashFlow.Application.DTOs;
 using CashFlow.Domain.Entities;
 using CashFlow.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace CashFlow.Application.Services;
 
 public class LancamentoService(
     ILancamentoRepository lancamentoRepository,
-    ILancamentoEventQueue lancamentoEventQueue) : ILancamentoService
+    ILogger<LancamentoService> logger) : ILancamentoService
 {
     public async Task<LancamentoResponse> RegistrarAsync(CriarLancamentoRequest request, CancellationToken cancellationToken = default)
     {
@@ -18,17 +19,26 @@ public class LancamentoService(
             request.DataLancamento,
             request.UsuarioId);
 
-        var id = await lancamentoRepository.AddAsync(lancamento, cancellationToken);
+        logger.LogProcessandoLancamento(lancamento.Id, lancamento.UsuarioId);
 
-        // A fila é desacoplada para garantir resiliência caso a consolidação esteja indisponível.
-        await lancamentoEventQueue.EnqueueAsync(lancamento, cancellationToken);
+        try
+        {
+            var id = await lancamentoRepository.AddAsync(lancamento, cancellationToken);
 
-        return new LancamentoResponse(
-            id,
-            lancamento.Descricao,
-            lancamento.Valor,
-            lancamento.Tipo,
-            lancamento.DataLancamento,
-            lancamento.UsuarioId);
+            logger.LogLancamentoRegistrado(id);
+
+            return new LancamentoResponse(
+                id,
+                lancamento.Descricao,
+                lancamento.Valor,
+                lancamento.Tipo,
+                lancamento.DataLancamento,
+                lancamento.UsuarioId);
+        }
+        catch (Exception exception)
+        {
+            logger.LogErroProcessamento(exception, lancamento.Id, exception.Message);
+            throw;
+        }
     }
 }

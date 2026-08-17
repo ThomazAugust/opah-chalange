@@ -35,14 +35,14 @@ public class SaldoConsolidado
         UltimaAtualizacao = ultimaAtualizacao;
     }
 
-    public void AplicarLancamento(decimal valor, TipoLancamento tipo)
+    public void AplicarLancamento(decimal valor, ModalidadeLancamento tipo)
     {
         if (valor <= 0)
         {
             throw new ArgumentException("O valor do lançamento deve ser maior que zero.", nameof(valor));
         }
 
-        if (tipo == TipoLancamento.Credito)
+        if (tipo == ModalidadeLancamento.Credito)
         {
             TotalCreditos += valor;
         }

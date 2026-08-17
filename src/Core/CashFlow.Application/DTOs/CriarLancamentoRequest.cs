@@ -5,6 +5,6 @@ namespace CashFlow.Application.DTOs;
 public sealed record CriarLancamentoRequest(
     string Descricao,
     decimal Valor,
-    TipoLancamento Tipo,
+    ModalidadeLancamento Tipo,
     DateTimeOffset DataLancamento,
     Guid UsuarioId);

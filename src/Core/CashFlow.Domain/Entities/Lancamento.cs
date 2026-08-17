@@ -7,11 +7,11 @@ public class Lancamento
     public Guid Id { get; private set; }
     public string Descricao { get; private set; }
     public decimal Valor { get; private set; }
-    public TipoLancamento Tipo { get; private set; }
+    public ModalidadeLancamento Tipo { get; private set; }
     public DateTimeOffset DataLancamento { get; private set; }
     public Guid UsuarioId { get; private set; }
 
-    public Lancamento(Guid id, string descricao, decimal valor, TipoLancamento tipo, DateTimeOffset dataLancamento, Guid usuarioId)
+    public Lancamento(Guid id, string descricao, decimal valor, ModalidadeLancamento tipo, DateTimeOffset dataLancamento, Guid usuarioId)
     {
         if (valor <= 0)
         {
@@ -27,7 +27,7 @@ public class Lancamento
         Descricao = descricao.Trim();
         Valor = valor;
         Tipo = tipo;
-        DataLancamento = dataLancamento;
+        DataLancamento = dataLancamento.ToUniversalTime(); // Npgsql só aceita timestamptz em UTC (offset 0)
         UsuarioId = usuarioId;
     }
 }

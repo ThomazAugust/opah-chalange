@@ -1,9 +1,28 @@
 using Consolidation.Worker;
 using CashFlow.Infrastructure;
+using Serilog;
 
-var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddCashFlowInfrastructure(builder.Configuration);
-builder.Services.AddHostedService<Worker>();
+Log.Logger = new LoggerConfiguration()
+	.WriteTo.Console()
+	.CreateBootstrapLogger();
 
-var host = builder.Build();
-host.Run();
+try
+{
+	var builder = Host.CreateApplicationBuilder(args);
+	builder.Services.AddSerilog((services, configuration) => configuration
+		.ReadFrom.Configuration(builder.Configuration)
+		.ReadFrom.Services(services));
+	builder.Services.AddCashFlowInfrastructure(builder.Configuration);
+	builder.Services.AddHostedService<Worker>();
+
+	var host = builder.Build();
+	host.Run();
+}
+catch (Exception exception)
+{
+	Log.Fatal(exception, "A aplicação encerrou inesperadamente.");
+}
+finally
+{
+	Log.CloseAndFlush();
+}

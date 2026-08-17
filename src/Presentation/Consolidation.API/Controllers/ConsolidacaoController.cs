@@ -18,7 +18,7 @@ public class ConsolidacaoController(ISaldoConsolidadoService saldoConsolidadoSer
         var saldo = await saldoConsolidadoService.ObterPorDataAsync(data, cancellationToken);
         if (saldo is null)
         {
-            return NotFound();
+            return Ok(null);
         }
 
         return Ok(saldo);

@@ -1,20 +1,18 @@
 using CashFlow.Application.DTOs;
 using CashFlow.Domain.Entities;
 using CashFlow.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace CashFlow.Application.Services;
 
 public class SaldoConsolidadoService(
     ISaldoConsolidadoRepository saldoConsolidadoRepository,
-    ILancamentoRepository lancamentoRepository) : ISaldoConsolidadoService
+    ILancamentoRepository lancamentoRepository,
+    ILogger<SaldoConsolidadoService> logger) : ISaldoConsolidadoService
 {
     public async Task<SaldoDiarioResponse?> ObterPorDataAsync(DateOnly data, CancellationToken cancellationToken = default)
     {
         var saldo = await saldoConsolidadoRepository.GetByDateAsync(data, cancellationToken);
-        if (saldo is null)
-        {
-            return null;
-        }
 
         return new SaldoDiarioResponse(
             saldo.Data,
@@ -31,6 +29,7 @@ public class SaldoConsolidadoService(
 
         foreach (var lancamento in lancamentos)
         {
+            logger.LogProcessandoLancamento(lancamento.Id, lancamento.UsuarioId);
             saldo.AplicarLancamento(lancamento.Valor, lancamento.Tipo);
         }
 

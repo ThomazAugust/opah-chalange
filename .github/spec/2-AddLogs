@@ -1,0 +1,151 @@
+📋 Especificação Técnica: Implementação de Log Estruturado e Observabilidade
+1. Visão Geral da Arquitetura de Log
+O objetivo é dotar a aplicação de Log Estruturado (Structured Logging) em formato JSON, garantindo alta performance, rastreabilidade ponta a ponta (Correlation ID) e integração nativa com ferramentas de observabilidade (ex: Grafana/Loki, ElasticSearch, Seq, Jaeger).
+
+2. Pacotes NuGet Necessários
+O agente deve adicionar as seguintes dependências no projeto da API / Presentation Layer e na camada de Infrastructure:
+
+Serilog.AspNetCore (Provedor principal de log)
+
+Serilog.Sinks.Console (Envio de logs no terminal em formato JSON)
+
+Serilog.Enrichers.Environment (Adiciona nome da máquina, ambiente, etc.)
+
+Serilog.Enrichers.Process (Adiciona ID do processo e thread)
+
+Serilog.Enrichers.Span (Vincula o TraceId e SpanId do OpenTelemetry automaticamente aos logs)
+
+OpenTelemetry.Extensions.Hosting (Suporte a rastreamento distribuído nativo)
+
+3. Configuração de Logs no appsettings.json
+O arquivo appsettings.json deve centralizar os níveis de log e as configurações do Serilog para permitir alterações sem recompilar o código.
+
+JSON
+{
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Console", "Serilog.Enrichers.Span" ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "Microsoft.Hosting.Lifetime": "Information",
+        "System": "Warning"
+      }
+    },
+    "Enrich": [ "FromLogContext", "WithMachineName", "WithProcessId", "WithSpan" ],
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "formatter": "Serilog.Formatting.Json.JsonFormatter, Serilog"
+        }
+      }
+    ],
+    "Properties": {
+      "Application": "NomeDaSuaAplicacao"
+    }
+  }
+}
+4. Padrões de Código e Implementação
+4.1. Inicialização do Serilog no Program.cs
+O agente deve configurar o bootstrap logger para capturar erros ocorridos durante a própria inicialização da aplicação (startup).
+
+C#
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
+try
+{
+    Log.Information("Iniciando a aplicação...");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Integrar o Serilog como provedor oficial de ILogger
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services));
+
+    // Adicionar Middleware de Correlation ID
+    builder.Services.AddHttpContextAccessor();
+
+    var app = builder.Build();
+
+    // Registrar o Middleware do Serilog para log de requisições HTTP otimizado
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} respondeu {StatusCode} em {Elapsed:0.0000} ms";
+    });
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "A aplicação encerrou inesperadamente.");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+4.2. Middleware de Correlation ID (Rastreabilidade)
+O agente deve criar um middleware para garantir que todas as requisições possuam um X-Correlation-ID, injetando-o no contexto do Serilog.
+
+C#
+public class CorrelationIdMiddleware
+{
+    private const string CorrelationIdHeader = "X-Correlation-ID";
+    private readonly RequestDelegate _next;
+
+    public CorrelationIdMiddleware(RequestDelegate next) => _next = next;
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        var correlationId = context.Request.Headers[CorrelationIdHeader].FirstOrDefault() 
+                            ?? Guid.NewGuid().ToString();
+
+        context.Response.Headers[CorrelationIdHeader] = correlationId;
+
+        using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+        {
+            await _next(context);
+        }
+    }
+}
+4.3. High-Performance Logging (LoggerMessage Attribute)
+Para logs dentro de loops, operações de alta concorrência ou fluxos críticos, o agente deve obrigatoriamente usar o padrão [LoggerMessage]. Ele evita alocações desnecessárias na memória (Zero Allocation) no compilador C#.
+
+C#
+public static partial class LogExtensions
+{
+    [LoggerMessage(
+        EventId = 1001,
+        Level = LogLevel.Information,
+        Message = "Processando lançamento ID: {LancamentoId} para o Cliente: {ClienteId}")]
+    public static partial void LogProcessandoLancamento(this ILogger logger, Guid lancamentoId, Guid clienteId);
+
+    [LoggerMessage(
+        EventId = 5001,
+        Level = LogLevel.Error,
+        Message = "Falha ao processar lançamento ID: {LancamentoId}. Erro: {MensagemErro}")]
+    public static partial void LogErroProcessamento(this ILogger logger, Exception ex, Guid lancamentoId, string mensagemErro);
+}
+5. Regras e Boas Práticas Obrigatórias para o Agente
+Nunca usar interpolação de strings: Proibido fazer _logger.LogInformation($"Erro no ID {id}"). Sempre usar mensagens template com placeholders para preservar a estrutura de dados: _logger.LogInformation("Erro no ID {Id}", id).
+
+Sem dados sensíveis (LGPD/GDPR): O agente nunca deve registrar senhas, tokens JWT, números de cartão de crédito ou CPF/CNPJ nos logs.
+
+Proibido usar Console.WriteLine: Todo e qualquer log deve passar pela interface genérica ILogger<T>.
+
+Uso correto dos Níveis de Log:
+
+Debug: Informações para diagnóstico em ambiente de desenvolvimento.
+
+Information: Eventos normais do fluxo de negócio (ex: "Pedido criado com sucesso").
+
+Warning: Comportamentos inesperados que não interrompem a aplicação (ex: falha temporária tratada com retry).
+
+Error: Falhas e exceções capturadas no fluxo que afetam uma operação específica.
+
+Critical/Fatal: Falhas graves que exigem intervenção imediata ou param o sistema.
