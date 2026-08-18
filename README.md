@@ -6,8 +6,6 @@ Projeto inicial para gestão de fluxo de caixa com arquitetura limpa em .NET 10.
 
 - .NET SDK 10
 - Docker
-- Kubernetes (opcional para deploy)
-- Helm (opcional para deploy)
 - PostgreSQL (ou Docker Compose)
 
 ## Estrutura
@@ -80,8 +78,5 @@ dotnet test CashFlow.slnx
 
 ## Melhorias futuras
 
-- Mensageria dedicada com RabbitMQ
-- Outbox pattern transacional
-- Observabilidade com Serilog + Prometheus/Grafana
+- Observabilidade com Serilog
 - Cobertura de testes >= 80%
-- CI/CD e deploy automatizado em Kubernetes
