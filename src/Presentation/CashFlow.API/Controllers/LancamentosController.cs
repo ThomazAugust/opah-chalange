@@ -1,5 +1,6 @@
 using CashFlow.Application.DTOs;
 using CashFlow.Application.Services;
+using CashFlow.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,5 +18,17 @@ public class LancamentosController(ILancamentoService lancamentoService) : Contr
     {
         var response = await lancamentoService.RegistrarAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Post), new { id = response.Id }, response);
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyCollection<LancamentoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Get(
+        [FromQuery] Guid? id,
+        [FromQuery] Guid? usuarioId,
+        [FromQuery] ModalidadeLancamento? tipo,
+        CancellationToken cancellationToken)
+    {
+        var lancamentos = await lancamentoService.BuscarAsync(id, usuarioId, tipo, cancellationToken);
+        return Ok(lancamentos);
     }
 }

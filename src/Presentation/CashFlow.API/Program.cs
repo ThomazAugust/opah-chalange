@@ -111,3 +111,7 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Necessário para expor o tipo de entrada aos testes de integração (WebApplicationFactory<Program>).
+public partial class Program;
+

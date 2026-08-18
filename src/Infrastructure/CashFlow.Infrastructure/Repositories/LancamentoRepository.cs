@@ -51,5 +51,49 @@ public class LancamentoRepository(ConnectionFactory connectionFactory) : ILancam
             row.UsuarioId)).ToArray();
     }
 
+    public async Task<IReadOnlyCollection<Lancamento>> BuscarAsync(Guid? id, Guid? usuarioId, ModalidadeLancamento? tipo, CancellationToken cancellationToken = default)
+    {
+        var filtros = new List<string>();
+        var parametros = new DynamicParameters();
+
+        if (id.HasValue)
+        {
+            filtros.Add("id = @Id");
+            parametros.Add("Id", id.Value);
+        }
+
+        if (usuarioId.HasValue)
+        {
+            filtros.Add("usuario_id = @UsuarioId");
+            parametros.Add("UsuarioId", usuarioId.Value);
+        }
+
+        if (tipo.HasValue)
+        {
+            filtros.Add("tipo = @Tipo");
+            parametros.Add("Tipo", (int)tipo.Value);
+        }
+
+        var whereClause = filtros.Count > 0 ? $"WHERE {string.Join(" AND ", filtros)}" : string.Empty;
+        var sql = $"""
+            SELECT id, descricao, valor, tipo, data_lancamento, usuario_id
+            FROM lancamentos
+            {whereClause};
+            """;
+
+        await using var connection = connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var rows = await connection.QueryAsync<RawLancamento>(new CommandDefinition(sql, parametros, cancellationToken: cancellationToken));
+
+        return rows.Select(row => new Lancamento(
+            row.Id,
+            row.Descricao,
+            row.Valor,
+            (ModalidadeLancamento)row.Tipo,
+            new DateTimeOffset(DateTime.SpecifyKind(row.DataLancamento, DateTimeKind.Utc)),
+            row.UsuarioId)).ToArray();
+    }
+
     private sealed record RawLancamento(Guid Id, string Descricao, decimal Valor, int Tipo, DateTime DataLancamento, Guid UsuarioId);
 }

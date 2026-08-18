@@ -1,5 +1,6 @@
 using CashFlow.Application.DTOs;
 using CashFlow.Domain.Entities;
+using CashFlow.Domain.Enums;
 using CashFlow.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -40,5 +41,18 @@ public class LancamentoService(
             logger.LogErroProcessamento(exception, lancamento.Id, exception.Message);
             throw;
         }
+    }
+
+    public async Task<IReadOnlyCollection<LancamentoResponse>> BuscarAsync(Guid? id, Guid? usuarioId, ModalidadeLancamento? tipo, CancellationToken cancellationToken = default)
+    {
+        var lancamentos = await lancamentoRepository.BuscarAsync(id, usuarioId, tipo, cancellationToken);
+
+        return lancamentos.Select(lancamento => new LancamentoResponse(
+            lancamento.Id,
+            lancamento.Descricao,
+            lancamento.Valor,
+            lancamento.Tipo,
+            lancamento.DataLancamento,
+            lancamento.UsuarioId)).ToArray();
     }
 }

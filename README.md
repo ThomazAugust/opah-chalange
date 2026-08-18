@@ -20,6 +20,8 @@ Projeto inicial para gestão de fluxo de caixa com arquitetura limpa em .NET 10.
 
 ## Executar localmente
 
+Importante: Os comandos devem ser executados dentro do diretorio da aplicação
+
 1. Restaurar e compilar:
 
 ```Bash ou PowerShell
@@ -62,6 +64,7 @@ dotnet run --project src/Presentation/Consolidation.Worker
 ## Endpoints principais
 
 - `POST /api/lancamentos`: registra crédito/débito
+- `GET /api/lancamentos?id={id}&usuarioId={usuarioId}&tipo={tipo}`: busca lançamentos filtrando por id, usuário e/ou tipo (todos os filtros são opcionais e combináveis)
 - `GET /api/saldos/{data}`: consulta saldo consolidado por dia
 - `GET /api/consolidacao/{data}`: consulta via serviço de consolidação
 - `POST /api/consolidacao/reprocessar/{data}`: reprocessa consolidação diária
@@ -75,6 +78,15 @@ As APIs estão preparadas para autenticação JWT com parâmetros em `appsetting
 ```Bash
 dotnet test CashFlow.slnx
 ```
+
+Os testes de integração (`src/Tests/CashFlow.IntegrationTests`) sobem a `CashFlow.API` real via
+`WebApplicationFactory<Program>`, com um listener Kestrel real em uma porta aleatória. Os
+repositórios (`ILancamentoRepository`, `ISaldoConsolidadoRepository`) são substituídos por dublês
+do **NSubstitute**, simulando o banco de dados sem depender de PostgreSQL. Um servidor
+**WireMock.Net** é iniciado em frente à API real, fazendo proxy das requisições HTTP de teste até
+o Kestrel da aplicação — o teste autentica via `/api/auth/login` e consulta
+`GET /api/lancamentos` através do endpoint do WireMock, validando a resposta com os dados
+configurados no repositório mockado.
 
 ## Melhorias futuras
 
