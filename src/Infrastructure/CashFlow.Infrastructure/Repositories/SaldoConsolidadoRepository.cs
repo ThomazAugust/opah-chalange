@@ -42,7 +42,7 @@ public class SaldoConsolidadoRepository(ConnectionFactory connectionFactory) : I
         await connection.OpenAsync(cancellationToken);
         await connection.ExecuteAsync(new CommandDefinition(sql, new
         {
-            saldoConsolidado.Data,
+            Data = saldoConsolidado.Data.ToDateTime(TimeOnly.MinValue), // Dapper/Npgsql não aceita DateOnly diretamente como parâmetro
             saldoConsolidado.TotalCreditos,
             saldoConsolidado.TotalDebitos,
             saldoConsolidado.SaldoFinal,

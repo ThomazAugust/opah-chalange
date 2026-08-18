@@ -47,9 +47,9 @@ public class LancamentoRepository(ConnectionFactory connectionFactory) : ILancam
             row.Descricao,
             row.Valor,
             (ModalidadeLancamento)row.Tipo,
-            row.DataLancamento,
+            new DateTimeOffset(DateTime.SpecifyKind(row.DataLancamento, DateTimeKind.Utc)),
             row.UsuarioId)).ToArray();
     }
 
-    private sealed record RawLancamento(Guid Id, string Descricao, decimal Valor, int Tipo, DateTimeOffset DataLancamento, Guid UsuarioId);
+    private sealed record RawLancamento(Guid Id, string Descricao, decimal Valor, int Tipo, DateTime DataLancamento, Guid UsuarioId);
 }

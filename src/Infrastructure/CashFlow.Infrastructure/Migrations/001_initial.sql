@@ -15,12 +15,4 @@ CREATE TABLE IF NOT EXISTS saldos_consolidados (
     ultima_atualizacao TIMESTAMPTZ NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS lancamentos_queue (
-    id BIGSERIAL PRIMARY KEY,
-    lancamento_id UUID NOT NULL,
-    payload JSONB NOT NULL,
-    criado_em TIMESTAMPTZ NOT NULL
-);
-
 CREATE INDEX IF NOT EXISTS idx_lancamentos_data ON lancamentos (data_lancamento);
-CREATE INDEX IF NOT EXISTS idx_lancamentos_queue_lancamento ON lancamentos_queue (lancamento_id);
